@@ -1,0 +1,83 @@
+from bs4 import *
+import requests as rq
+import csv
+import xlsxwriter
+import time
+import random
+
+# Load list of director names from CSV file
+f = open('director_list2.csv','r') # CSV file with director names in first column
+reader = csv.reader(f)
+nameslist = []
+for row in reader:
+    nameslist.append(row)
+print("Count of directors in CSV file: "+str(len(nameslist)))
+
+# Enumerate as we go through the list of directors
+count = 0
+# Create list of file names for each director to be saved as we go through the list
+rootlist = []
+
+for eachname in nameslist: #iterates through the nameslist
+    if count >= 0: # Set where you want to start from in your list e.g. set to 500 to start from that row
+        targetname = str(nameslist[count])[2:-6] # Specify the part of text we want to insert to the Google search address
+        time.sleep(random.randrange(1,31,1)/90) # Created a short random time delay between each photo being downloaded to prevent 'too many requests' error
+        r2 = rq.get("https://www.google.com/search?q="+targetname+"&tbm=isch") # You can play around with the search criteria to get the results you want
+        soup2 = BeautifulSoup(r2.text, 'html.parser') # Parsed information from search saved here
+        links = [] # Creates list where we will add the image links
+        imagedata = soup2.select('img[src^="http://"]') # Selects image link code according to this criteria
+        for img in imagedata:
+            links.append(img['src']) # Add image source code to the links list
+            break
+        i = 0
+        for index, img_link in enumerate(links):
+            if i <= 0: # Select only the first image found on Google for each director
+                img_data = rq.get(img_link).content # downloads image content from the link
+                with open("director_list2\\"+str(targetname)+".jpg", 'wb+') as f:
+                    f.write(img_data)
+                rootlist.append('director_list2\\'+str(targetname)+".jpg")
+                i += 1
+                print(targetname+" image has been downloaded and name was added to rootlist")
+        count += 1
+        print(count)
+    else: # Does not download images but still retains the names list information and count
+        targetname = str(nameslist[count])[2:-6]
+        rootlist.append('director_list2\\'+str(targetname)+".jpg")
+        print(str(targetname)+".jpg"+" image has NOT BEEN downloaded - only name was added to rootlist")
+        print(count)
+        count += 1
+        continue
+
+workbook = xlsxwriter.Workbook('images_document.xlsx')
+worksheet = workbook.add_worksheet("images_here")
+
+#resize cells
+worksheet.set_column("A:A", 20)
+worksheet.set_column("B:B", 20)
+worksheet.set_default_row(100)
+image_row = 1
+image_col = 1
+
+count2 = 0
+
+for imagename in rootlist:
+    if count2 < 2600: # sets max range to prevent errors when reaching the end
+        worksheet.insert_image(image_row,
+                               image_col,
+                               imagename, {'x.scale': 1, 'y_scale': 1,
+                                       'x_offset': 1, 'y_offset': 1,
+                                       'positioning': 2
+                                       })
+        worksheet.write_string(image_row, image_col + 1, imagename[15:])
+        image_row += 1
+        print('added image to excel for '+imagename[15:])
+        print(count2)
+        count2 += 1
+
+    else:
+        worksheet.write_string(image_row, image_col + 1, imagename[15:])
+        image_row += 1
+        print('adding without image to excel for '+imagename[15:])
+        count2 += 1
+        continue
+workbook.close()
