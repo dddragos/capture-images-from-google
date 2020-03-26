@@ -48,6 +48,8 @@ for eachname in nameslist: #iterates through the nameslist
         count += 1
         continue
 
+#Creates Excel workbook and adds images in a row of cells of a specific size
+
 workbook = xlsxwriter.Workbook('images_document.xlsx')
 worksheet = workbook.add_worksheet("images_here")
 
@@ -61,7 +63,7 @@ image_col = 1
 count2 = 0
 
 for imagename in rootlist:
-    if count2 < 2600: # sets max range to prevent errors when reaching the end
+    if count2 < 2600: # sets max range to stop when reaching the end
         worksheet.insert_image(image_row,
                                image_col,
                                imagename, {'x.scale': 1, 'y_scale': 1,
